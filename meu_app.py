@@ -53,5 +53,4 @@ def main():
     st.subheader('Previsões para os Próximos {} Dias:'.format(periods))
     st.write(forecast[['ds', 'yhat', 'yhat_lower', 'yhat_upper']].tail(periods))
 
-if __name__ == '__main__':
     main()
