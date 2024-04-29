@@ -8,49 +8,63 @@ Original file is located at
 """
 
 import streamlit as st
-from prophet import Prophet
 import pandas as pd
-from datetime import datetime, timedelta
+from prophet import Prophet
+import altair as alt
 
-# Carregar os dados
+# Carregar os dados (substitua este trecho pelo seu código de carregamento de dados)
 @st.cache
 def load_data():
-    # Carregar os dados preenchidos para frente
-    df_filled_forward = pd.read_csv('df_filled_forward.csv')
-    return df_filled_forward
+    # Carregar o dataframe df_filled_forward
+    df = pd.read_csv('df_filled_forward.csv')
+    return df
 
-# Ajustar o modelo Prophet
-def fit_prophet_model(data):
+# Função para prever os preços usando o Prophet
+def predict_prices(df):
+    # Criar um dataframe para o Prophet
+    df_prophet = df.rename(columns={'Date': 'ds', 'Preço': 'y'})
+
+    # Inicializar e treinar o modelo
     model = Prophet()
-    model.fit(data)
-    return model
+    model.fit(df_prophet)
 
-# Fazer previsões
-def make_predictions(model, periods):
-    future = model.make_future_dataframe(periods=periods)
+    # Fazer previsões para os próximos n dias
+    future = model.make_future_dataframe(periods=360)
     forecast = model.predict(future)
+
     return forecast
 
-# Função principal do aplicativo
-def main():
-    # Título do aplicativo
-    st.title('Previsão do Preço do Petróleo Brent')
+# Carregar os dados
+df = load_data()
 
-    # Carregar os dados
-    df = load_data()
+# Título do app
+st.title('Previsão de Preços do Petróleo usando Prophet')
 
-    # Ajustar o modelo Prophet
-    model = fit_prophet_model(df)
+# Prever os preços e exibir o resultado
+forecast = predict_prices(df)
+st.write(forecast)
 
-    # Selecionar período para fazer previsões
-    st.subheader('Selecionar Período para Previsões')
-    periods = st.slider('Número de Dias para Previsão:', min_value=1, max_value=365, value=30)
+# Criar um gráfico interativo com Altair
+st.subheader('Gráfico Interativo')
 
-    # Fazer previsões
-    forecast = make_predictions(model, periods)
+# Plotar o gráfico de previsão
+c = alt.Chart(forecast).mark_line().encode(
+    x='ds',
+    y='yhat',
+    tooltip=['ds', 'yhat'],
+    color=alt.value('blue')
+).properties(
+    width=800,
+    height=400
+).interactive()
 
-    # Exibir previsões
-    st.subheader('Previsões para os Próximos {} Dias:'.format(periods))
-    st.write(forecast[['ds', 'yhat', 'yhat_lower', 'yhat_upper']].tail(periods))
+# Adicionar título e rótulos aos eixos
+c = c.properties(
+    title='Previsão de Preços do Petróleo',
+).configure_axis(
+    titleFontSize=14,
+    labelFontSize=12
+)
 
-    main()
+# Exibir o gráfico
+st.altair_chart(c)
